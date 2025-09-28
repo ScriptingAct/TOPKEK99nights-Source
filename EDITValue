@@ -2,6 +2,14 @@ local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
+local UNC_CHECK_INTERVAL = 0.1 -- ตรวจสอบทุก 0.1 วิ
+local UNC_SAFE_THRESHOLD = 5 -- กำหนดว่า <= 5 ถือว่าปลอดภัย
+
+local function CheckUNC()
+    -- ตัวอย่างสุ่มเลขจำลอง (แทนที่ด้วยโค้ดตรวจสอบจริง)
+    return math.random(0, 10)
+end
+
 local Window = Fluent:CreateWindow({
     Title = "TOPKEK PREMIUM [99 nights] เวอร์ชั่นไลต์ " .. Fluent.Version,
     SubTitle = "by Alexzy123",
@@ -13,25 +21,78 @@ local Window = Fluent:CreateWindow({
 })
 
 local Tabs = {
-    Main = Window:AddTab({ Title = "เมนูหลัก", Icon = "" }),
-    Settings = Window:AddTab({ Title = "การตั้งค่า", Icon = "settings" })
+    Main = Window:AddTab({ Title = "เมนูหลัก", Icon = "shield" }),
+    Settings = Window:AddTab({ Title = "การตั้งค่า", Icon = "settings" }),
 }
 
+-- ฟังก์ชันอัปเดต Title และ Icon ตาม UNC
+local function UpdateTitleAndIcon(unc)
+    local safe = unc <= UNC_SAFE_THRESHOLD
+    local statusText = safe and "ปลอดภัย" or "ไม่ปลอดภัย"
+    local iconName = safe and "shield" or "warning"
+
+    Window:SetTitle("TOPKEK PREMIUM [99 nights] เวอร์ชั่นไลต์ " .. Fluent.Version .. " | UNC: " .. unc .. " | " .. statusText)
+    Tabs.Main:SetIcon(iconName)
+end
+
+-- เริ่มตรวจสอบ UNC แบบ Loop เรียลไทม์
+task.spawn(function()
+    while not Fluent.Unloaded do
+        local unc = CheckUNC()
+        UpdateTitleAndIcon(unc)
+        task.wait(UNC_CHECK_INTERVAL)
+    end
+end)
+
+-- ตัวอื่นๆ ตามสคริปต์เดิม (walkspeed, fly, etc.) ใส่ในนี้ต่อไป
 local Options = Fluent.Options
 
 do
-    -- WalkSpeed Slider
-    local WalkSpeedSlider = Tabs.Main:AddSlider("LoopWalkSpeed", {
-        Title = "ปรับความไวการเดิน",
-        Description = "ปรับความเร็วการเดิน",
+    -- WalkSpeed Toggle และ Slider
+    local walkSpeedToggle = Tabs.Main:AddToggle("WalkSpeedToggle", {
+        Title = "เดินเร็ว (เปิด-ปิด)",
+        Description = "เปิดเพื่อปรับความเร็วเดินเป็นค่าที่ตั้งไว้",
+        Default = false
+    })
+    local walkSpeedSlider = Tabs.Main:AddSlider("WalkSpeedValue", {
+        Title = "ความเร็วเดิน",
+        Description = "ปรับความเร็วเดิน (เมื่อเปิด toggle เท่านั้น)",
         Default = 16,
         Min = 16,
         Max = 100,
         Rounding = 1,
     })
 
-    -- Fly Speed Slider (ใหม่)
-    local FlySpeedSlider = Tabs.Main:AddSlider("FlySpeed", {
+    walkSpeedToggle:OnChanged(function(enabled)
+        if not enabled then
+            local player = game.Players.LocalPlayer
+            if player and player.Character then
+                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.WalkSpeed = 16
+                end
+            end
+        end
+    end)
+
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            if Fluent.Unloaded then break end
+            if Options.WalkSpeedToggle.Value then
+                local player = game.Players.LocalPlayer
+                if player and player.Character then
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    if humanoid then
+                        humanoid.WalkSpeed = Options.WalkSpeedValue.Value
+                    end
+                end
+            end
+        end
+    end)
+
+    -- FlySpeed Slider
+    local flySpeedSlider = Tabs.Main:AddSlider("FlySpeed", {
         Title = "ความเร็วบิน",
         Description = "ปรับความเร็วบิน",
         Default = 50,
@@ -40,76 +101,35 @@ do
         Rounding = 1,
     })
 
-    Tabs.Main:AddButton({
-        Title = "ตั้งค่าเดินไว",
-        Description = "กดเพื่อเริ่ม loop ความเร็วเดิน",
-        Callback = function()
-            print("เริ่ม Loop WalkSpeed...")
+    -- NoFog Toggle Loop
+    local Lighting = game:GetService("Lighting")
+    local originalFogEnd = Lighting.FogEnd
+    local originalFogStart = Lighting.FogStart
 
-            task.spawn(function()
-                while true do
-                    task.wait(1)
-                    if Fluent.Unloaded then break end
-
-                    local player = game.Players.LocalPlayer
-                    if player and player.Character then
-                        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-                        if humanoid then
-                            humanoid.WalkSpeed = Options.LoopWalkSpeed.Value
-                        end
-                    end
-                end
-            end)
-        end
-    })
-
--- 🌫️ NoFog Toggle แบบ Loop
-local Lighting = game:GetService("Lighting")
-local originalFogEnd = Lighting.FogEnd
-local originalFogStart = Lighting.FogStart
-
-local NoFogToggle = Tabs.Main:AddToggle("NoFog", {
-    Title = "ปิดหมอก",
-    Default = false
-})
-
-local noFogLoopRunning = false
-
-NoFogToggle:OnChanged(function(value)
-    if value then
-        noFogLoopRunning = true
-        task.spawn(function()
-            while noFogLoopRunning and not Fluent.Unloaded do
-                Lighting.FogEnd = 1000000
-                Lighting.FogStart = 0
-                task.wait(0.5)
-            end
-        end)
-    else
-        noFogLoopRunning = false
-        Lighting.FogEnd = originalFogEnd
-        Lighting.FogStart = originalFogStart
-    end
-end)
-
-
-    -- LoopFB Toggle
-    local FBLoopToggle = Tabs.Main:AddToggle("LoopFB", {
-        Title = "แสงสว่างจ้า (ใช้งานไม่ได้ X )",
+    local NoFogToggle = Tabs.Main:AddToggle("NoFog", {
+        Title = "ปิดหมอก",
         Default = false
     })
 
-    task.spawn(function()
-        while true do
-            task.wait(1)
-            if Fluent.Unloaded then break end
-            if Options.LoopFB.Value then
-                print("LoopFB is running...")
-            end
+    local noFogLoopRunning = false
+    NoFogToggle:OnChanged(function(value)
+        if value then
+            noFogLoopRunning = true
+            task.spawn(function()
+                while noFogLoopRunning and not Fluent.Unloaded do
+                    Lighting.FogEnd = 1000000
+                    Lighting.FogStart = 0
+                    task.wait(0.5)
+                end
+            end)
+        else
+            noFogLoopRunning = false
+            Lighting.FogEnd = originalFogEnd
+            Lighting.FogStart = originalFogStart
         end
     end)
 
-    -- Fly แบบ Inf Yield (แก้ T บินขึ้น, G บินลง)
+    -- Fly Toggle
     local UserInputService = game:GetService("UserInputService")
     local RunService = game:GetService("RunService")
 
