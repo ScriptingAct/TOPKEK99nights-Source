@@ -1,0 +1,239 @@
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "TOPKEK 1.0 [99 nights] เวอร์ชั่นไลต์ " .. Fluent.Version,
+    SubTitle = "by Alexzy123",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "เมนูหลัก", Icon = "" }),
+    Settings = Window:AddTab({ Title = "การตั้งค่า", Icon = "settings" })
+}
+
+local Options = Fluent.Options
+
+do
+    -- WalkSpeed Slider
+    local WalkSpeedSlider = Tabs.Main:AddSlider("LoopWalkSpeed", {
+        Title = "ปรับความไวการเดิน",
+        Description = "ปรับความเร็วการเดิน",
+        Default = 16,
+        Min = 16,
+        Max = 100,
+        Rounding = 1,
+    })
+
+    -- Fly Speed Slider (ใหม่)
+    local FlySpeedSlider = Tabs.Main:AddSlider("FlySpeed", {
+        Title = "ความเร็วบิน",
+        Description = "ปรับความเร็วบิน",
+        Default = 50,
+        Min = 10,
+        Max = 200,
+        Rounding = 1,
+    })
+
+    Tabs.Main:AddButton({
+        Title = "ตั้งค่าเดินไว",
+        Description = "กดเพื่อเริ่ม loop ความเร็วเดิน",
+        Callback = function()
+            print("เริ่ม Loop WalkSpeed...")
+
+            task.spawn(function()
+                while true do
+                    task.wait(1)
+                    if Fluent.Unloaded then break end
+
+                    local player = game.Players.LocalPlayer
+                    if player and player.Character then
+                        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                        if humanoid then
+                            humanoid.WalkSpeed = Options.LoopWalkSpeed.Value
+                        end
+                    end
+                end
+            end)
+        end
+    })
+
+-- 🌫️ NoFog Toggle แบบ Loop
+local Lighting = game:GetService("Lighting")
+local originalFogEnd = Lighting.FogEnd
+local originalFogStart = Lighting.FogStart
+
+local NoFogToggle = Tabs.Main:AddToggle("NoFog", {
+    Title = "ปิดหมอก",
+    Default = false
+})
+
+local noFogLoopRunning = false
+
+NoFogToggle:OnChanged(function(value)
+    if value then
+        noFogLoopRunning = true
+        task.spawn(function()
+            while noFogLoopRunning and not Fluent.Unloaded do
+                Lighting.FogEnd = 1000000
+                Lighting.FogStart = 0
+                task.wait(0.5)
+            end
+        end)
+    else
+        noFogLoopRunning = false
+        Lighting.FogEnd = originalFogEnd
+        Lighting.FogStart = originalFogStart
+    end
+end)
+
+
+    -- LoopFB Toggle
+    local FBLoopToggle = Tabs.Main:AddToggle("LoopFB", {
+        Title = "แสงสว่างจ้า",
+        Default = false
+    })
+
+    task.spawn(function()
+        while true do
+            task.wait(1)
+            if Fluent.Unloaded then break end
+            if Options.LoopFB.Value then
+                print("LoopFB is running...")
+            end
+        end
+    end)
+
+    -- Fly แบบ Inf Yield (แก้ T บินขึ้น, G บินลง)
+    local UserInputService = game:GetService("UserInputService")
+    local RunService = game:GetService("RunService")
+
+    local flying = false
+    local player = game.Players.LocalPlayer
+
+    local flyToggle = Tabs.Main:AddToggle("FlyToggle", {
+        Title = "บิน (Fly) แบบ Inf Yield",
+        Default = false
+    })
+
+    local bodyVelocity, bodyGyro
+
+    flyToggle:OnChanged(function(enabled)
+        flying = enabled
+
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+        if flying then
+            humanoid.PlatformStand = true
+
+            bodyVelocity = Instance.new("BodyVelocity")
+            bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+            bodyVelocity.Parent = humanoidRootPart
+
+            bodyGyro = Instance.new("BodyGyro")
+            bodyGyro.MaxTorque = Vector3.new(4e5, 4e5, 4e5)
+            bodyGyro.P = 10000
+            bodyGyro.CFrame = humanoidRootPart.CFrame
+            bodyGyro.Parent = humanoidRootPart
+
+            local function updateVelocity()
+                if not flying then return end
+
+                local cam = workspace.CurrentCamera
+                local moveDirection = Vector3.new()
+
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    moveDirection = moveDirection + cam.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    moveDirection = moveDirection - cam.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    moveDirection = moveDirection - cam.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    moveDirection = moveDirection + cam.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.T) then -- บินขึ้น
+                    moveDirection = moveDirection + Vector3.new(0,1,0)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.G) then -- บินลง
+                    moveDirection = moveDirection - Vector3.new(0,1,0)
+                end
+
+                if moveDirection.Magnitude > 0 then
+                    bodyVelocity.Velocity = moveDirection.Unit * Options.FlySpeed.Value
+                    bodyGyro.CFrame = CFrame.new(humanoidRootPart.Position, humanoidRootPart.Position + moveDirection)
+                else
+                    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                end
+            end
+
+            RunService:BindToRenderStep("Fly", Enum.RenderPriority.Character.Value + 1, updateVelocity)
+
+        else
+            humanoid.PlatformStand = false
+            if bodyVelocity then
+                bodyVelocity:Destroy()
+                bodyVelocity = nil
+            end
+            if bodyGyro then
+                bodyGyro:Destroy()
+                bodyGyro = nil
+            end
+            RunService:UnbindFromRenderStep("Fly")
+        end
+    end)
+
+    -- Infinite Jump Toggle
+    local infJumpEnabled = false
+
+    local infJumpToggle = Tabs.Main:AddToggle("InfJumpToggle", {
+        Title = "กระโดดไม่จำกัด (Inf Jump)",
+        Default = false
+    })
+
+    infJumpToggle:OnChanged(function(value)
+        infJumpEnabled = value
+    end)
+
+    game:GetService("UserInputService").JumpRequest:Connect(function()
+        if infJumpEnabled then
+            local character = player.Character
+            if character and character:FindFirstChildOfClass("Humanoid") then
+                character:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end
+    end)
+end
+
+-- Settings Tab
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+
+InterfaceManager:SetFolder("FluentScriptHub")
+SaveManager:SetFolder("FluentScriptHub/specific-game")
+
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "TOPKEK",
+    Content = "TOPKEK 1.0 Has been Started.",
+    Duration = 8
+})
+
+SaveManager:LoadAutoloadConfig()
