@@ -95,7 +95,7 @@ end)
 
     -- LoopFB Toggle
     local FBLoopToggle = Tabs.Main:AddToggle("LoopFB", {
-        Title = "แสงสว่างจ้า",
+        Title = "แสงสว่างจ้า (ใช้งานไม่ได้ X )",
         Default = false
     })
 
@@ -117,7 +117,7 @@ end)
     local player = game.Players.LocalPlayer
 
     local flyToggle = Tabs.Main:AddToggle("FlyToggle", {
-        Title = "บิน (Fly) แบบ Inf Yield",
+        Title = "บิน [กด T เพื่อบินขึ้น กด G เพื่อบินลง]",
         Default = false
     })
 
@@ -197,7 +197,7 @@ end)
     local infJumpEnabled = false
 
     local infJumpToggle = Tabs.Main:AddToggle("InfJumpToggle", {
-        Title = "กระโดดไม่จำกัด (Inf Jump)",
+        Title = "กระโดดไม่จำกัด",
         Default = false
     })
 
