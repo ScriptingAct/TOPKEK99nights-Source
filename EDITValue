@@ -3,7 +3,7 @@ local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/d
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
 local Window = Fluent:CreateWindow({
-    Title = "TOPKEK 1.0 [99 nights] เวอร์ชั่นไลต์ " .. Fluent.Version,
+    Title = "TOPKEK PREMIUM [99 nights] เวอร์ชั่นไลต์ " .. Fluent.Version,
     SubTitle = "by Alexzy123",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 460),
