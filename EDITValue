@@ -232,7 +232,7 @@ Window:SelectTab(1)
 
 Fluent:Notify({
     Title = "TOPKEK",
-    Content = "TOPKEK 1.0 Has been Started.",
+    Content = "ท็อปเค็ก (ภาษาไทย) ได้เริ่มดำเนินการแล้ว ",
     Duration = 8
 })
 
