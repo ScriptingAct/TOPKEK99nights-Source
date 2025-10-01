@@ -95,7 +95,7 @@ do
     local flySpeedSlider = Tabs.Main:AddSlider("FlySpeed", {
         Title = "ความเร็วบิน",
         Description = "ปรับความเร็วบิน",
-        Default = 50,
+        Default = 61,
         Min = 10,
         Max = 200,
         Rounding = 1,
